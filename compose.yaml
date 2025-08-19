@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  radicale:
+    image: tomsquest/docker-radicale:latest
+    container_name: radicale
+    ports:
+      - "5232:5232"
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - CHOWN
+      - KILL
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          pids: 50
+    healthcheck:
+      test: curl -f http://127.0.0.1:5232 || exit 1
+      interval: 30s
+      retries: 3
+    restart: unless-stopped
+    environment:
+      # 禁用容器尝试 chown 数据目录
+      TAKE_FILE_OWNERSHIP: "false"
+      UID: 1026     # 群晖主机上 Radicale 数据目录的用户 UID
+      GID: 100      # 群晖主机上 Radicale 数据目录的组 GID
+    volumes:
+      - /volume2/Docker/radicale/data:/data
