@@ -39,7 +39,7 @@ jobs:
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: radicale-$(date +%Y%m%d%H%M)
+          tag_name: radicale-${{ github.run_id }}
           files: radicale-data.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
