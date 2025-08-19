@@ -37,19 +37,17 @@ jobs:
           cd vCards
           npm run-script radicale
 
-      # 6. 安装 zip 工具和中文语言包
-      - name: Install zip and language-pack
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y zip language-pack-zh-hans
-          sudo locale-gen zh_CN.GBK
+      # 6. 安装 7zip 和 rsync
+      - name: Install 7zip and rsync
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full rsync
 
-      # 7. 打包为 ZIP（群晖 DSM 中文友好）
+      # 7. 转换文件名编码为 GBK 并打包
       - name: Zip radicale data (GBK)
         run: |
           cd vCards
-          # 设置环境变量 LANG 为 zh_CN.GBK，避免中文乱码
-          LANG=zh_CN.GBK zip -r ../radicale-data.zip radicale
+          mkdir ../radicale-gbk
+          rsync -av --iconv=UTF-8,GBK radicale/ ../radicale-gbk/
+          7z a ../radicale-data.zip ./radicale-gbk/*
 
       # 8. 上传到 GitHub Release
       - name: Upload to GitHub Release
