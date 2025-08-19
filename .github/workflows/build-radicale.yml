@@ -41,17 +41,28 @@ jobs:
       - name: Install zip
         run: sudo apt-get update && sudo apt-get install -y zip
 
-      # 7. 压缩为 UTF-8 ZIP（兼容 7-Zip 和 DSM）
+      # 7a. 压缩为 UTF-8 ZIP（兼容 7-Zip 和 macOS/Linux）
       - name: Zip radicale data (UTF-8)
         run: |
           cd vCards
-          zip -r -FS ../radicale-data.zip radicale -q -Z store -UN=UTF8
+          zip -r ../radicale-data-utf8.zip radicale
+      
+      # 7b. 压缩为 GBK ZIP（兼容 DSM 内置解压）
+      - name: Zip radicale data (GBK)
+        run: |
+          cd vCards
+          mkdir -p ../radicale-gbk
+          rsync -av --iconv=UTF-8,GBK radicale/ ../radicale-gbk/
+          cd ..
+          7z a radicale-data-gbk.zip radicale-gbk/*
 
       # 8. 上传到 GitHub Release
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: radicale-${{ github.run_id }}
-          files: radicale-data.zip
+          files: |
+            radicale-data-utf8.zip
+            radicale-data-gbk.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
