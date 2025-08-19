@@ -37,19 +37,15 @@ jobs:
           cd vCards
           npm run-script radicale
 
-      # 6. 安装 7zip 和 rsync
-      - name: Install 7zip and rsync
-        run: sudo apt-get update && sudo apt-get install -y p7zip-full rsync
+      # 6. 安装 zip
+      - name: Install zip
+        run: sudo apt-get update && sudo apt-get install -y zip
 
-      # 7. 转换文件名编码为 GBK 并打包
-      - name: Zip radicale data (GBK)
+      # 7. 压缩为 UTF-8 ZIP（兼容 7-Zip 和 DSM）
+      - name: Zip radicale data (UTF-8)
         run: |
           cd vCards
-          mkdir -p ../radicale-gbk
-          rsync -av --iconv=UTF-8,GBK radicale/ ../radicale-gbk/
-          cd ..
-          7z a radicale-data.zip radicale-gbk
-
+          zip -r -FS ../radicale-data.zip radicale -q -Z store -UN=UTF8
 
       # 8. 上传到 GitHub Release
       - name: Upload to GitHub Release
