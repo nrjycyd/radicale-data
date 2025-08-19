@@ -37,15 +37,15 @@ jobs:
           cd vCards
           npm run-script radicale
 
-      # 6. 安装 7z 压缩工具
+      # 6. 安装 7zip 压缩工具
       - name: Install 7zip
         run: sudo apt-get update && sudo apt-get install -y p7zip-full
 
-      # 7. 用 7z 压缩为 ZIP（DSM 友好）
+      # 7. 用 7z 压缩为 ZIP（DSM 友好，GBK 编码）
       - name: Zip radicale data (GBK)
         run: |
           cd vCards
-          zip -r -O CP936 ../radicale-data.zip radicale
+          7z a -tzip -mcu=GBK ../radicale-data.zip radicale
 
       # 8. 上传到 GitHub Release
       - name: Upload to GitHub Release
@@ -55,4 +55,3 @@ jobs:
           files: radicale-data.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
