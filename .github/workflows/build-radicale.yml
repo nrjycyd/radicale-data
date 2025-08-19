@@ -45,10 +45,11 @@ jobs:
       - name: Zip radicale data (GBK)
         run: |
           cd vCards
-          mkdir -p ../vCards
-          rsync -av --iconv=UTF-8,GBK radicale/ ../vCards/
+          mkdir -p ../radicale-gbk
+          rsync -av --iconv=UTF-8,GBK radicale/ ../radicale-gbk/
           cd ..
-          7z a radicale-data.zip vCards
+          7z a radicale-data.zip radicale-gbk
+
 
       # 8. 上传到 GitHub Release
       - name: Upload to GitHub Release
