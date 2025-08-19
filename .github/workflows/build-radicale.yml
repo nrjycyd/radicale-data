@@ -44,8 +44,8 @@ jobs:
       # 7. 用 7z 压缩为 ZIP（DSM 友好）
       - name: Zip radicale data (GBK)
         run: |
-          sudo apt-get update && sudo apt-get install -y zip
-          zip -r -O CP936 radicale-data.zip vCards/radicale
+          cd vCards
+          zip -r -O CP936 ../radicale-data.zip radicale
 
       # 8. 上传到 GitHub Release
       - name: Upload to GitHub Release
