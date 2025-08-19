@@ -47,11 +47,25 @@ jobs:
           tar -czf ../radicale-data.tar.gz radicale
 
       # 7. 上传到 GitHub Release
+      - name: Get current date
+        id: date
+        run: echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
+      
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: radicale-${{ github.run_id }}
-          files: |
-            radicale-data.tar.gz
+          tag_name: radicale-${{ steps.date.outputs.date }}
+          name: Released on ${{ steps.date.outputs.date }}
+          body: 自动备份 Radicale 数据
+          files: radicale-data.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Delete old Releases (保留最近 7 个)
+        uses: dev-drprasad/delete-older-releases@v0.2.1
+        with:
+          keep_latest: 7
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
