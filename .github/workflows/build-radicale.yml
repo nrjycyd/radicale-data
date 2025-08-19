@@ -1,7 +1,7 @@
 name: Build Radicale Data
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # 手动触发
   push:
     branches:
       - main
@@ -11,38 +11,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. 获取仓库
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # 2. 安装 Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      # 3. 克隆 vCards 仓库
       - name: Clone vCards
         run: git clone https://github.com/metowolf/vCards.git
 
+      # 4. 安装 vCards 依赖
       - name: Install dependencies
         run: |
           cd vCards
           npm install
 
+      # 5. 生成 Radicale 数据
       - name: Build radicale data
         run: |
           cd vCards
           npm run-script radicale
 
-      - name: Zip radicale data (UTF-8)
-        run: |
-          # 使用 -r 递归，-FS 保留符号链接，-9 压缩，-UN=UTF8 确保 UTF-8 中文名
-          cd vCards
-          zip -r -FS -9 -UN=UTF8 ../radicale-data.zip radicale
+      # 6. 安装 7z 压缩工具
+      - name: Install 7zip
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full
 
+      # 7. 用 7z 压缩为 ZIP（DSM 友好）
+      - name: Zip radicale data
+        run: |
+          7z a -tzip radicale-data.zip vCards/radicale -mx=9
+
+      # 8. 上传到 GitHub Release
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          # 使用 run_number 或 run_id 生成唯一 tag，避免非法字符
-          tag_name: radicale-${{ github.run_number }}
+          tag_name: radicale-${{ github.run_id }}
           files: radicale-data.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
