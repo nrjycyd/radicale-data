@@ -1,0 +1,38 @@
+name: Build Radicale Data
+
+on:
+  workflow_dispatch:   # 手动触发
+  push:
+    branches:
+      - main           # 你也可以改成 master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build radicale data
+        run: npm run radicale
+
+      - name: Zip radicale data
+        run: |
+          zip -r radicale-data.zip radicale
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: radicale-$(date +%Y%m%d%H%M)   # 每次生成唯一 tag
+          files: radicale-data.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
