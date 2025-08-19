@@ -37,33 +37,18 @@ jobs:
           cd vCards
           npm run-script radicale
 
-      # 6. 安装 7zip（用于 GBK 转码）
-      - name: Install 7zip
-        run: sudo apt-get update && sudo apt-get install -y p7zip-full
-
-      # 7a. 压缩为 UTF-8 tar.gz
-      - name: Tar radicale data (UTF-8)
+      # 6. 压缩为 tar.gz（UTF-8 文件名）
+      - name: Tar radicale data
         run: |
           cd vCards
-          tar -czf ../radicale-data-utf8.tar.gz radicale
+          tar -czf ../radicale-data.tar.gz radicale
 
-      # 7b. 压缩为 GBK tar.gz（兼容 DSM 内置解压）
-      - name: Tar radicale data (GBK)
-        run: |
-          cd vCards
-          mkdir -p ../radicale-gbk
-          # 使用 iconv 转换文件名为 GBK
-          rsync -av --iconv=UTF-8,GBK radicale/ ../radicale-gbk/
-          cd ..
-          tar -czf radicale-data-gbk.tar.gz radicale-gbk/*
-
-      # 8. 上传到 GitHub Release
+      # 7. 上传到 GitHub Release
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: radicale-${{ github.run_id }}
           files: |
-            radicale-data-utf8.tar.gz
-            radicale-data-gbk.tar.gz
+            radicale-data.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
