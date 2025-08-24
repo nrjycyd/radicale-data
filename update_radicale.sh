@@ -2,6 +2,7 @@
 # update_radicale.sh
 # 多用户、多系统、支持 tar.gz / zip 压缩格式
 # 日志保存在脚本同目录
+# 增强版：中文提示 + 实时输出 + 错误检查
 
 # ---------------- 配置 ----------------
 REPO="nrjycyd/radicale-data"           # GitHub 仓库
@@ -11,9 +12,9 @@ ARCHIVE_TYPE="${ARCHIVE_TYPE:-auto}"   # 指定解压格式: tar.gz | zip | auto
 
 # 用户与系统映射
 declare -A USER_SYSTEM=(
+  [admin]="ios"
+  [guest]="macos"
   [cn]="ios"
-  [alice]="macos"
-  [bob]="ios"
 )
 
 # UTF-8 环境，防止 zip 中文乱码
@@ -28,16 +29,20 @@ LOG_FILE="$ROOT_DIR/update_radicale.log"
 TMP_FILE="$DEST_DIR/tmp_radicale_archive"
 TMP_DIR="$DEST_DIR/tmp_radicale"
 
-# 写入日志头
-{
-echo "=============================="
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting Radicale update"
-echo "Repository : $REPO"
-echo "Users      : ${!USER_SYSTEM[@]}"
-echo "Archive    : $ARCHIVE_TYPE"
-echo "=============================="
+# ---------------- 日志函数 ----------------
+log() {
+    local MSG="$*"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $MSG" | tee -a "$LOG_FILE"
+}
 
-# 1. 获取最新 Release 下载链接
+log "=============================="
+log "开始更新 Radicale 数据"
+log "GitHub 仓库 : $REPO"
+log "用户列表   : ${!USER_SYSTEM[@]}"
+log "解压类型   : $ARCHIVE_TYPE"
+log "=============================="
+
+# ---------------- 1. 获取最新 Release 下载链接 ----------------
 RELEASE_JSON=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
 
 if [[ "$ARCHIVE_TYPE" == "tar.gz" ]]; then
@@ -57,57 +62,57 @@ else
 fi
 
 if [[ -z "$LATEST_URL" ]]; then
-    echo "Error: No release found for requested archive type: $ARCHIVE_TYPE"
+    log "错误: 未找到指定类型的 Release ($ARCHIVE_TYPE)"
     exit 1
 fi
+log "最新 Release 下载链接: $LATEST_URL"
 
-echo "Downloading archive: $TMP_FILE from $LATEST_URL..."
+# ---------------- 2. 下载文件 ----------------
+log "开始下载文件: $TMP_FILE ..."
 if ! wget --quiet --show-progress --timeout=30 --tries=3 -O "$TMP_FILE" "$LATEST_URL"; then
-    echo "Error: Failed to download $TMP_FILE"
+    log "错误: 下载失败 $TMP_FILE"
     exit 1
 fi
 
-# 2. 检查文件有效性
 if [[ ! -s "$TMP_FILE" ]]; then
-    echo "Error: Downloaded file is empty"
+    log "错误: 下载文件为空"
     exit 1
 fi
+log "文件下载完成: $TMP_FILE"
 
-# 3. 创建临时目录
+# ---------------- 3. 创建临时目录 ----------------
 rm -rf "$TMP_DIR"
 mkdir -p "$TMP_DIR"
 
-# 4. 解压
-echo "Extracting $TMP_FILE..."
-EXT="${TMP_FILE##*.}"
+# ---------------- 4. 解压 ----------------
+log "开始解压文件: $TMP_FILE ..."
 if [[ "$TMP_FILE" == *.tar.gz ]]; then
-    tar -zxf "$TMP_FILE" -C "$TMP_DIR"
+    tar -zxf "$TMP_FILE" -C "$TMP_DIR" || { log "错误: tar.gz 解压失败"; exit 1; }
 elif [[ "$TMP_FILE" == *.zip ]]; then
-    unzip -q "$TMP_FILE" -d "$TMP_DIR"
+    unzip -q "$TMP_FILE" -d "$TMP_DIR" || { log "错误: zip 解压失败"; exit 1; }
 else
-    echo "Error: Unsupported archive format for $TMP_FILE"
+    log "错误: 不支持的压缩格式 $TMP_FILE"
     exit 1
 fi
+log "解压完成"
 
-# 5. 为每个用户同步对应系统数据
+# ---------------- 5. 同步用户数据 ----------------
 for user in "${!USER_SYSTEM[@]}"; do
     SYSTEM="${USER_SYSTEM[$user]}"
     SRC_DIR="$TMP_DIR/radicale/$SYSTEM"
     if [[ ! -d "$SRC_DIR" ]]; then
-        echo "Warning: $SYSTEM directory not found for user $user, skipping..."
+        log "警告: 找不到 $SYSTEM 目录, 用户 $user 将被跳过"
         continue
     fi
     USER_DIR="$DEST_DIR/data/collections/collection-root/$user"
-    echo "Updating user: $user, system: $SYSTEM -> $USER_DIR"
+    log "更新用户: $user, 系统: $SYSTEM -> $USER_DIR"
     mkdir -p "$USER_DIR"
-    rsync -a --delete --ignore-missing-args "$SRC_DIR/" "$USER_DIR/"
+    rsync -a --delete --ignore-missing-args "$SRC_DIR/" "$USER_DIR/" && log "用户 $user 更新完成"
 done
 
-# 6. 清理临时文件
+# ---------------- 6. 清理临时文件 ----------------
 rm -rf "$TMP_DIR"
 rm -f "$TMP_FILE"
 
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Radicale data updated successfully"
-echo "=============================="
-
-} >> "$LOG_FILE" 2>&1
+log "Radicale 数据更新成功"
+log "=============================="
