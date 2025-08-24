@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 19 * * *'  # 每天北京时间凌晨3点执行
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,39 +24,49 @@ jobs:
       - name: Clone vCards
         run: git clone https://github.com/metowolf/vCards.git
 
-      # 4. 安装 vCards 依赖
+      # 4. 安装依赖
       - name: Install dependencies
         run: |
           cd vCards
           npm install
 
-      # 5. 生成 Radicale 数据
+      # 5. 数据验证（防止脏数据）
+      - name: Run tests
+        run: |
+          cd vCards
+          npm test
+
+      # 6. 构建 Radicale 数据
       - name: Build radicale data
         run: |
           cd vCards
-          npm run-script radicale
+          npm run radicale
 
-      # 6. 压缩为 tar.gz（UTF-8 文件名）
-      - name: Tar radicale data
+      # 7. 压缩 Radicale 数据
+      #    用 zip 代替 tar.gz，兼容性更好
+      - name: Zip radicale data
         run: |
           cd vCards
-          tar -czf ../radicale-data.tar.gz radicale
+          export LC_ALL=C.UTF-8
+          zip -r ../radicale-data.zip radicale
 
-      # 7. 上传到 GitHub Release
+      # 8. 获取当前日期
       - name: Get current date
         id: date
         run: echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
-      
+
+      # 9. 上传到 GitHub Release
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: radicale-${{ steps.date.outputs.date }}
           name: Released on ${{ steps.date.outputs.date }}
           body: 自动备份 Radicale 数据
-          files: radicale-data.tar.gz
+          files: radicale-data.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
+      # 10. 删除旧的 Release
       - name: Delete old Releases (保留最近 7 个)
         uses: dev-drprasad/delete-older-releases@v0.2.1
         with:
@@ -64,4 +74,3 @@ jobs:
           delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
