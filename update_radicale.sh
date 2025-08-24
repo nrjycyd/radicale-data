@@ -16,6 +16,11 @@ declare -A USER_SYSTEM=(
   [bob]="ios"
 )
 
+# UTF-8 环境，防止 zip 中文乱码
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+# 路径设置
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEST_DIR="$ROOT_DIR"
 LOG_FILE="$ROOT_DIR/update_radicale.log"
