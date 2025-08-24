@@ -7,7 +7,7 @@
 REPO="nrjycyd/radicale-data"           # GitHub 仓库
 TAR_NAME="radicale-data.tar.gz"        # tar.gz 文件名
 ZIP_NAME="radicale-data.zip"           # zip 文件名
-ARCHIVE_TYPE="${ARCHIVE_TYPE:-auto}"   # 指定解压格式: tar.gz | zip | auto（默认 auto），群晖系统请选择 tar.gz 格式
+ARCHIVE_TYPE="${ARCHIVE_TYPE:-auto}"   # 指定解压格式: tar.gz | zip | auto（默认 auto）
 
 # 用户与系统映射
 declare -A USER_SYSTEM=(
