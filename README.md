@@ -67,7 +67,7 @@
   添加：
 
   ```swift
-  0 3 * * * /docker/radicale/update_radicale.sh >> /docker/radicale/logs/update_radicale.log 2>&1
+  0 3 * * * /docker/radicale/update_radicale.sh
   ```
 
   
