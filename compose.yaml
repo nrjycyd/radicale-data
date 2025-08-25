@@ -33,4 +33,4 @@ services:
       GID: 100      # 宿主机上 Radicale 数据目录的组 GID
     volumes:
       - /volume2/Docker/radicale/data:/data
-      - /volume2/Docker/radicale/config:/config:ro   # 配置账户密码使用
+      - /volume2/Docker/radicale/config:/config:ro   # 自定义账户密码使用，不需要可以注释掉，不影响容器构建及使用
