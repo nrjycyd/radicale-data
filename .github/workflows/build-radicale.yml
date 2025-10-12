@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 0.1️ 检查 vCards 是否在 24h 内发布新版本
+      # 0.1 检查 vCards 是否在 24h 内发布新版本
       - name: Check if new release within 24h
         id: check_release_time
         run: |
@@ -24,13 +24,13 @@ jobs:
 
           if [ "$LATEST_TAG" = "null" ] || [ -z "$LATEST_TAG" ]; then
             echo "❌ 未找到 release 信息，退出。"
-            exit 1
+            echo "build=false" >> $GITHUB_ENV
+            exit 0
           fi
 
           echo "最新版本: $LATEST_TAG"
           echo "发布时间(UTC): $PUBLISHED_AT"
 
-          # 转换为时间戳（秒）
           RELEASE_TS=$(date -d "$PUBLISHED_AT" +%s)
           NOW_TS=$(date -u +%s)
           DIFF=$((NOW_TS - RELEASE_TS))
@@ -46,12 +46,12 @@ jobs:
             echo "build=false" >> $GITHUB_ENV
           fi
 
-      # 0.2️ 无更新则直接退出整个 workflow
+      # 0.2 无更新则直接退出整个 workflow
       - name: Stop if no new release
-        if: env.build == 'false'
+        if: ${{ env.build == 'false' }}
         run: |
           echo "🚫 没有24小时内的新发布，退出。"
-          exit 0
+          exit 0 
           
       # 1. 获取仓库
       - name: Checkout repo
