@@ -23,8 +23,8 @@ jobs:
           PUBLISHED_AT=$(echo "$RELEASE_INFO" | jq -r '.published_at')
 
           if [ "$LATEST_TAG" = "null" ] || [ -z "$LATEST_TAG" ]; then
-            echo "⏹ 没有找到 release 信息，退出 workflow"
-            echo "⏹ Summary: 无 release"
+            echo "❌ 未找到 release 信息，退出 workflow"
+            echo "build_status=no_release" >> $GITHUB_ENV
             exit 78
           fi
 
@@ -34,13 +34,13 @@ jobs:
 
           if [ "$DIFF" -le 86400 ]; then
             echo "✅ 在24小时内发布"
-            echo "✅ Summary: 构建触发，版本 $LATEST_TAG，发布时间 $PUBLISHED_AT"
+            echo "build_status=build" >> $GITHUB_ENV
           else
-            echo "⏹ 超过24小时，无需构建"
-            echo "⏹ Summary: 无需构建，版本 $LATEST_TAG，发布时间 $PUBLISHED_AT"
+            echo "⏹ 超过24小时，无需构建，退出 workflow"
+            echo "build_status=skip" >> $GITHUB_ENV
             exit 78
           fi
-
+          
       # 1. 获取仓库
       - name: Checkout repo
         uses: actions/checkout@v4
