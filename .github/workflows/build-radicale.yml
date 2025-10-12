@@ -15,23 +15,18 @@ jobs:
         id: check_release
         run: |
           RELEASE_API="https://api.github.com/repos/metowolf/vCards/releases/latest"
-
           echo "🔍 获取最新 release 信息..."
           RELEASE_INFO=$(curl -s "$RELEASE_API")
-
           LATEST_TAG=$(echo "$RELEASE_INFO" | jq -r '.tag_name')
           PUBLISHED_AT=$(echo "$RELEASE_INFO" | jq -r '.published_at')
-
           if [ "$LATEST_TAG" = "null" ] || [ -z "$LATEST_TAG" ]; then
             echo "❌ 未找到 release 信息，退出 workflow"
             echo "build_status=no_release" >> $GITHUB_ENV
             exit 78
           fi
-
           RELEASE_TS=$(date -d "$PUBLISHED_AT" +%s)
           NOW_TS=$(date -u +%s)
           DIFF=$((NOW_TS - RELEASE_TS))
-
           if [ "$DIFF" -le 86400 ]; then
             echo "✅ 在24小时内发布"
             echo "build_status=build" >> $GITHUB_ENV
@@ -60,33 +55,28 @@ jobs:
         run: |
           cd vCards
           npm install
-
       # 5. 数据验证（避免脏数据进入 Release）
       - name: Run tests
         run: |
           cd vCards
           npm test
-
       # 6. 构建 Radicale 数据
       - name: Build radicale data
         run: |
           cd vCards
           npm run radicale
-
       # 7. 压缩为 radicale-data.zip
       - name: Zip radicale data
         run: |
           cd vCards
           export LC_ALL=C.UTF-8
           zip -r ../radicale-data.zip radicale
-
       # 8. 压缩为 radicale-data.tar.gz
       - name: Tar radicale data
         run: |
           cd vCards
           tar --posix --owner=0 --group=0 --numeric-owner \
             -czf ../radicale-data.tar.gz radicale
-
       # 9. 获取当前日期
       - name: Get current date
         id: date
