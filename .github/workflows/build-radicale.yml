@@ -10,6 +10,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 0.1️ 检查 vCards 是否在 24h 内发布新版本
+      - name: Check if new release within 24h
+        id: check_release_time
+        run: |
+          RELEASE_API="https://api.github.com/repos/metowolf/vCards/releases/latest"
+
+          echo "🔍 获取最新 release 信息..."
+          RELEASE_INFO=$(curl -s "$RELEASE_API")
+
+          LATEST_TAG=$(echo "$RELEASE_INFO" | jq -r '.tag_name')
+          PUBLISHED_AT=$(echo "$RELEASE_INFO" | jq -r '.published_at')
+
+          if [ "$LATEST_TAG" = "null" ] || [ -z "$LATEST_TAG" ]; then
+            echo "❌ 未找到 release 信息，退出。"
+            exit 1
+          fi
+
+          echo "最新版本: $LATEST_TAG"
+          echo "发布时间(UTC): $PUBLISHED_AT"
+
+          # 转换为时间戳（秒）
+          RELEASE_TS=$(date -d "$PUBLISHED_AT" +%s)
+          NOW_TS=$(date -u +%s)
+          DIFF=$((NOW_TS - RELEASE_TS))
+          HOURS=$((DIFF / 3600))
+
+          echo "距离现在: $HOURS 小时前"
+
+          if [ "$DIFF" -le 86400 ]; then
+            echo "✅ Release 在24小时内发布，继续构建。"
+            echo "build=true" >> $GITHUB_ENV
+          else
+            echo "⏹ Release 超过24小时，无需构建。"
+            echo "build=false" >> $GITHUB_ENV
+          fi
+
+      # 0.2️ 无更新则直接退出整个 workflow
+      - name: Stop if no new release
+        if: env.build == 'false'
+        run: |
+          echo "🚫 没有24小时内的新发布，退出。"
+          exit 0
+          
       # 1. 获取仓库
       - name: Checkout repo
         uses: actions/checkout@v4
