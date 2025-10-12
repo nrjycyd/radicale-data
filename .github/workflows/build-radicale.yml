@@ -113,3 +113,12 @@ jobs:
           delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 12. Workflow Summary
+      - name: Workflow Summary
+        run: |
+          if [ "${{ env.build_status }}" = "build" ]; then
+            echo "✅ 构建完成：Radicale 数据已生成并上传到 Release" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⏹ 无需构建：24小时内无新 release" >> $GITHUB_STEP_SUMMARY
+          fi      
