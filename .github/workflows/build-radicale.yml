@@ -23,9 +23,9 @@ jobs:
           PUBLISHED_AT=$(echo "$RELEASE_INFO" | jq -r '.published_at')
 
           if [ "$LATEST_TAG" = "null" ] || [ -z "$LATEST_TAG" ]; then
-            echo "❌ 未找到 release 信息，退出 workflow"
-            echo "build_status=no_release" >> $GITHUB_ENV
-            exit 78
+            echo "❌ 未找到 release 信息"
+            echo "build=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
 
           RELEASE_TS=$(date -d "$PUBLISHED_AT" +%s)
@@ -34,47 +34,53 @@ jobs:
 
           if [ "$DIFF" -le 86400 ]; then
             echo "✅ 在24小时内发布"
-            echo "build_status=build" >> $GITHUB_ENV
+            echo "build=true" >> $GITHUB_OUTPUT
           else
-            echo "⏹ 超过24小时，无需构建，退出 workflow"
-            echo "build_status=skip" >> $GITHUB_ENV
-            exit 78
+            echo "⏹ 超过24小时"
+            echo "build=false" >> $GITHUB_OUTPUT
           fi
-          
+
       # 1. 获取仓库
       - name: Checkout repo
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         uses: actions/checkout@v4
 
       # 2. 安装 Node.js
       - name: Setup Node.js
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       # 3. 克隆 vCards 仓库
       - name: Clone vCards
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         run: git clone https://github.com/metowolf/vCards.git
 
       # 4. 安装依赖
       - name: Install dependencies
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         run: |
           cd vCards
           npm install
 
       # 5. 数据验证（避免脏数据进入 Release）
       - name: Run tests
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         run: |
           cd vCards
           npm test
 
       # 6. 构建 Radicale 数据
       - name: Build radicale data
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         run: |
           cd vCards
           npm run radicale
 
       # 7. 压缩为 radicale-data.zip
       - name: Zip radicale data
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         run: |
           cd vCards
           export LC_ALL=C.UTF-8
@@ -82,6 +88,7 @@ jobs:
 
       # 8. 压缩为 radicale-data.tar.gz
       - name: Tar radicale data
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         run: |
           cd vCards
           tar --posix --owner=0 --group=0 --numeric-owner \
@@ -89,11 +96,13 @@ jobs:
 
       # 9. 获取当前日期
       - name: Get current date
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         id: date
         run: echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
 
       # 10. 上传到 GitHub Release（两个产物一起上传）
       - name: Upload to GitHub Release
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: radicale-${{ steps.date.outputs.date }}
@@ -107,18 +116,10 @@ jobs:
 
       # 11. 删除旧的 Release（只保留最近 7 个）
       - name: Delete old Releases (保留最近 7 个)
+        if: ${{ steps.check_release.outputs.build == 'true' }}
         uses: dev-drprasad/delete-older-releases@v0.2.1
         with:
           keep_latest: 7
           delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 12. Workflow Summary
-      - name: Workflow Summary
-        run: |
-          if [ "${{ env.build_status }}" = "build" ]; then
-            echo "✅ 构建完成：Radicale 数据已生成并上传到 Release" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⏹ 无需构建：24小时内无新 release" >> $GITHUB_STEP_SUMMARY
-          fi      
