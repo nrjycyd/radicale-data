@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       # 0.1 检查 vCards 是否在 24h 内发布新版本
@@ -91,7 +93,7 @@ jobs:
 
       # 10. 上传到 GitHub Release（两个产物一起上传）
       - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: radicale-${{ steps.date.outputs.date }}
           name: Released on ${{ steps.date.outputs.date }}
@@ -104,9 +106,29 @@ jobs:
 
       # 11. 删除旧的 Release（只保留最近 7 个）
       - name: Delete old Releases (保留最近 7 个)
-        uses: dev-drprasad/delete-older-releases@v0.2.1
+        uses: actions/github-script@v8
         with:
-          keep_latest: 7
-          delete_tags: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner, repo, per_page: 100
+            });
+            const oldReleases = releases
+              .filter(release => !release.draft)
+              .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))
+              .slice(7);
+
+            for (const release of oldReleases) {
+              core.info(`删除旧 Release: ${release.tag_name}`);
+              await github.rest.repos.deleteRelease({
+                owner, repo, release_id: release.id
+              });
+              try {
+                await github.rest.git.deleteRef({
+                  owner, repo, ref: `tags/${release.tag_name}`
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                core.info(`标签已不存在: ${release.tag_name}`);
+              }
+            }
