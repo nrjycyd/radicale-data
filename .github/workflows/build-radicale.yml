@@ -40,35 +40,35 @@ jobs:
 
       # 1. 获取仓库
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      # 2. 安装 Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      # 3. 克隆 vCards 仓库
+      # 2. 克隆 vCards 仓库
       - name: Clone vCards
         run: git clone https://github.com/metowolf/vCards.git
+
+      # 3. 按上游 package.json 安装对应版本的 Bun
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: vCards/package.json
 
       # 4. 安装依赖
       - name: Install dependencies
         run: |
           cd vCards
-          npm install
+          bun install --frozen-lockfile
 
       # 5. 数据验证（避免脏数据进入 Release）
       - name: Run tests
         run: |
           cd vCards
-          npm test
+          bun run test
 
       # 6. 构建 Radicale 数据
       - name: Build radicale data
         run: |
           cd vCards
-          npm run radicale
+          bun run radicale
 
       # 7. 压缩为 radicale-data.zip
       - name: Zip radicale data
